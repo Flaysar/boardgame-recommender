@@ -51,10 +51,22 @@ def translator(ru_text: str) -> str:
 # MODEL
 # -----------------------------
 MODEL_NAME = "all-MiniLM-L6-v2"
-model = SentenceTransformer(MODEL_NAME)
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        model = SentenceTransformer(MODEL_NAME)
+    return model
 
 CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL)
+cross_encoder = None
+
+def get_cross_encoder():
+    global cross_encoder
+    if cross_encoder is None:
+        cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL)
+    return cross_encoder
 
 TEXT_WEIGHT = 0.65
 MECHANICS_WEIGHT = 0.22
@@ -67,7 +79,7 @@ SAMPLE_SIZE = 100
 GAMES_TOP_K = 8
 
 def get_embedding(text: str):
-    embedding = model.encode(text, normalize_embeddings=True)
+    embedding = get_model().encode(text, normalize_embeddings=True)
     return embedding.tolist()
 
 def get_game_embedding_by_id(game_id: int):
@@ -295,7 +307,7 @@ def rerank_with_cross_encoder(query, results):
         })
 
     # главный шаг
-    scores = cross_encoder.predict(pairs)
+    scores = get_cross_encoder().predict(pairs)
     # print(scores)
 
     for i, score in enumerate(scores):

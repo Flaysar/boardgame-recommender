@@ -5,9 +5,8 @@ psycopg[binary]
 pgvector
 
 python-dotenv
+requests
 
 pydantic
 
 sentence-transformers
-
-requests
