@@ -9,5 +9,5 @@ requests
 
 pydantic
 
-sentence-transformers==2.2.2
-torch==2.0.1
+sentence-transformers>=3.0.0
+torch>=2.2.0,<2.5.0
