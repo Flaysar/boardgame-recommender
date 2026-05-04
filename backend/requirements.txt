@@ -1,6 +1,13 @@
 fastapi
 uvicorn[standard]
+
 psycopg[binary]
-python-dotenv
-pydantic
 pgvector
+
+python-dotenv
+
+pydantic
+
+sentence-transformers
+
+requests
