@@ -70,6 +70,8 @@ def _get_database_url() -> str:
 
 
 def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
+    t0 = time.perf_counter()
+
     if not game_ids:
         return {}
 
@@ -84,6 +86,7 @@ def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
             cur.execute(sql, (game_ids,))
             for game_id, image_url in cur.fetchall():
                 out[int(game_id)] = image_url
+    log_time("get images", t0)
     return out
 
 
@@ -103,9 +106,12 @@ def _table_has_column(cur, table_name: str, column_name: str) -> bool:
 
 
 def _get_game_details_by_ids(game_ids: list[int]) -> dict[int, dict]:
+    t0 = time.perf_counter()
     if not game_ids:
         return {}
     games = load_games_from_db(game_ids)
+    log_time("load game details", t0)
+
     by_id: dict[int, dict] = {}
     for g in games:
         gid = int(g["game_id"])

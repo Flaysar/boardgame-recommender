@@ -75,7 +75,7 @@ MECHANICS_TOP_K = 15
 NEUTRAL_MECHANICS_DISTANCE = 1.5
 MECHANICS_LIMIT = 0.30
 CORE_MECHANICS_WEIGHT = 0.25
-SAMPLE_SIZE = 100
+SAMPLE_SIZE = 50
 GAMES_TOP_K = 8
 
 def get_embedding(text: str):
@@ -307,7 +307,7 @@ def rerank_with_cross_encoder(query, results):
         })
 
     # главный шаг
-    scores = get_cross_encoder().predict(pairs)
+    scores = get_cross_encoder().predict(pairs, batch_size=32)
     # print(scores)
 
     for i, score in enumerate(scores):
