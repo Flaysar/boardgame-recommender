@@ -7,6 +7,18 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+import time
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+def log_time(label: str, start: float):
+    elapsed = time.perf_counter() - start
+    logging.info(f"{label}: {elapsed:.3f}s")
+
 from get_similar_v4 import (
     GAMES_TOP_K,
     SAMPLE_SIZE,
@@ -200,7 +212,10 @@ def meta():
 
 @app.post("/recommend")
 def recommend(payload: RecommendRequest):
+    total_start = time.perf_counter()
+
     query = (payload.query or "").strip()
+    logging.info(f"START recommend | query='{query}'")
     if not query and payload.reference_game_id is None:
         raise HTTPException(
             status_code=422,
@@ -208,9 +223,13 @@ def recommend(payload: RecommendRequest):
         )
 
     search_query = query
+
+    t0 = time.perf_counter()
     if query and payload.translate_ru and _has_cyrillic(query):
         search_query = translator(query)
+    log_time("translation", t0)
 
+    t0 = time.perf_counter()
     try:
         results = search_similar_games(
             query=search_query,
@@ -229,6 +248,9 @@ def recommend(payload: RecommendRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка поиска: {e}")
 
+    log_time("vector_search (SQL + embeddings)", t0)
+
+    t0 = time.perf_counter()
     try:
         if payload.reference_game_id and search_query:
             ref_game = load_games_from_db([payload.reference_game_id])[0]
@@ -245,11 +267,20 @@ def recommend(payload: RecommendRequest):
             reranked = rerank_with_cross_encoder(fallback_q, results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка rerank: {e}")
+    
+    log_time("cross_encoder_rerank", t0)
+
+
+    t0 = time.perf_counter()
 
     final = reranked[:GAMES_TOP_K]
     game_ids = [int(item["primary_score"][0]) for item in final]
     image_by_id = _get_images_by_game_ids(game_ids)
     details_by_id = _get_game_details_by_ids(game_ids)
+
+    log_time("db enrichment (images + details)", t0)
+
+    t0 = time.perf_counter()
 
     games = []
     for item in final:
@@ -259,6 +290,10 @@ def recommend(payload: RecommendRequest):
         details = details_by_id.get(game_id, {})
         model.update(details)
         games.append(model)
+
+    log_time("response build", t0)
+
+    log_time("TOTAL REQUEST", total_start)
 
     return {
         "query_used": search_query if search_query else None,
