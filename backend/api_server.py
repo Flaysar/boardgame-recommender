@@ -42,6 +42,19 @@ app.add_middleware(
 )
 
 
+
+logging.info("До connect")
+
+t = time.time()
+
+conn = psycopg.connect(
+    os.getenv("DATABASE_URL"),
+    connect_timeout=5
+)
+
+logging.info(f"CONNECT OK: {time.time() - t:.2f}s")
+
+
 class RecommendRequest(BaseModel):
     query: Optional[str] = None
     players_min: Optional[int] = None
