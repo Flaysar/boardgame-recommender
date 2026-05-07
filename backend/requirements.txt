@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 
 psycopg[binary]
+psycopg[pool]
 pgvector
 
 python-dotenv
@@ -9,5 +10,12 @@ requests
 
 pydantic
 
-sentence-transformers>=3.0.0
-torch>=2.2.0,<2.5.0
+numpy<2
+scipy<1.12
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.0.1+cpu
+sentence-transformers==2.2.2
+transformers<4.40
+huggingface-hub==0.16.4

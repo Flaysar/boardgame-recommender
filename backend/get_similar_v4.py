@@ -10,6 +10,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers import CrossEncoder
 import requests
 
+from db import pool
 
 # -----------------------------
 # TRANSLATION
@@ -85,7 +86,7 @@ def get_embedding(text: str):
 def get_game_embedding_by_id(game_id: int):
     database_url = os.getenv("DATABASE_URL")
 
-    with psycopg.connect(database_url) as conn:
+    with pool.connection() as conn:
         register_vector(conn)
         with conn.cursor() as cur:
             cur.execute(
@@ -241,7 +242,7 @@ def load_games_from_db(game_ids):
     if not database_url:
         raise RuntimeError("DATABASE_URL не найден")
 
-    with psycopg.connect(database_url) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (game_ids,))
             results = cur.fetchall()
@@ -673,7 +674,7 @@ def search_similar_games(
 
     logging.info(f"Старт самого SQL запроса поиска похожих игр")
 
-    with psycopg.connect(database_url) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             results = cur.fetchall()

@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 import time
 import logging
 
+from db import pool
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
@@ -45,16 +47,16 @@ app.add_middleware(
 
 
 
-logging.info("До connect")
+# logging.info("До connect")
 
-t = time.time()
+# t = time.time()
 
-conn = psycopg.connect(
-    os.getenv("DATABASE_URL"),
-    connect_timeout=5
-)
+# conn = psycopg.connect(
+#     os.getenv("DATABASE_URL"),
+#     connect_timeout=5
+# )
 
-logging.info(f"CONNECT OK: {time.time() - t:.2f}s")
+# logging.info(f"CONNECT OK: {time.time() - t:.2f}s")
 
 
 class RecommendRequest(BaseModel):
@@ -77,12 +79,6 @@ def _has_cyrillic(text: str) -> bool:
     return any("а" <= ch.lower() <= "я" or ch.lower() == "ё" for ch in text)
 
 
-def _get_database_url() -> str:
-    db = os.getenv("DATABASE_URL")
-    if not db:
-        raise HTTPException(status_code=500, detail="DATABASE_URL не найден")
-    return db
-
 
 def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
     t0 = time.perf_counter()
@@ -96,7 +92,7 @@ def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
         WHERE game_id = ANY(%s)
     """
     out: dict[int, Optional[str]] = {}
-    with psycopg.connect(_get_database_url()) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (game_ids,))
             for game_id, image_url in cur.fetchall():
@@ -184,7 +180,7 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
         LIMIT %s
     """
     items = []
-    with psycopg.connect(_get_database_url()) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (f"%{q.strip()}%", limit))
             for game_id, name, image_url in cur.fetchall():
@@ -202,7 +198,7 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
 def meta():
     mechanics = []
     categories = []
-    with psycopg.connect(_get_database_url()) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             mech_has_desc = _table_has_column(cur, "mechanics", "description")
             cat_has_desc = _table_has_column(cur, "categories", "description")
