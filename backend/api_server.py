@@ -22,6 +22,8 @@ def log_time(label: str, start: float):
 from get_similar_v4 import (
     GAMES_TOP_K,
     SAMPLE_SIZE,
+    get_cross_encoder,
+    get_model,
     load_games_from_db,
     rerank_with_cross_encoder,
     search_similar_games,
@@ -319,3 +321,9 @@ def recommend(payload: RecommendRequest):
         "count": len(games),
         "games": games,
     }
+
+
+@app.on_event("startup")
+async def startup_event():
+    get_model()
+    get_cross_encoder()
