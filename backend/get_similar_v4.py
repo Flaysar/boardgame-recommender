@@ -198,6 +198,8 @@ def load_games_from_db(game_ids):
     Загружаем все нужные данные для сборки source_text
     """
 
+    logging.info(f"Загружаем из БД данные {len(game_ids)} для игр")
+
     sql = """
         SELECT 
             g.game_id,
@@ -261,6 +263,8 @@ def rerank_with_cross_encoder(query, results):
     results — это то, что вернул SQL
     """
 
+    logging.info(f"Старт функции переранжирования с помощью cross-encoder")
+
     pairs = []
     enriched = []
 
@@ -306,9 +310,12 @@ def rerank_with_cross_encoder(query, results):
             "ce_score": 0.0
         })
 
+    logging.info(f"Старт cross-encoder")
+
     # главный шаг
     scores = get_cross_encoder().predict(pairs, batch_size=32)
-    # print(scores)
+    
+    logging.info(f"Работа cross-encoder завершена")
 
     for i, score in enumerate(scores):
         enriched[i]["ce_score"] = float(score)
@@ -364,6 +371,8 @@ def search_similar_games(
 
     if not database_url:
         raise RuntimeError("DATABASE_URL не найден")
+    
+    logging.info(f"Старт поиска похожих игр")
 
     text_embedding = None
     game_embedding = None
@@ -662,10 +671,14 @@ def search_similar_games(
 
     params = [query_embedding] + where_params + [top_k]
 
+    logging.info(f"Старт самого SQL запроса поиска похожих игр")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             results = cur.fetchall()
+
+    logging.info(f"Поиск похожих игр завершён, найдено {len(results)} игр")
 
     return results
 
@@ -697,6 +710,7 @@ if __name__ == "__main__":
         reference_game_info = load_games_from_db([reference_game_id])[0]
         formatted_refer_info = build_source_text(reference_game_info)
 
+
     results = search_similar_games(
         query,
         # weight_min=2.0,
@@ -714,6 +728,8 @@ if __name__ == "__main__":
         reranked = rerank_with_cross_encoder(query, results)
     else:
         reranked = rerank_with_cross_encoder(formatted_refer_info, results)
+
+    logging.info(f"Получено {len(reranked)} игр после переранжирования, отбираем топ {GAMES_TOP_K}")
 
     final = reranked[:GAMES_TOP_K]
 
