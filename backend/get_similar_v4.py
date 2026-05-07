@@ -382,6 +382,8 @@ def search_similar_games(
     where_clauses = ["ge.embedding IS NOT NULL"]
     where_params = []
 
+    logging.info(f"Готовим embedding для текста запроса и игры-референса")
+
     if query:
         text_embedding = get_embedding(query)
 
@@ -395,6 +397,8 @@ def search_similar_games(
         refer_game_embedding=refer_game_embedding,
         alpha=alpha
     )
+
+    logging.info(f"embedding готов")
 
     # players — hard filter
     if players_min is not None and players_max is not None:
@@ -672,10 +676,10 @@ def search_similar_games(
 
     params = [query_embedding] + where_params + [top_k]
 
-    logging.info(f"Старт самого SQL запроса поиска похожих игр")
 
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            logging.info(f"Старт самого SQL запроса поиска похожих игр")
             cur.execute(sql, params)
             results = cur.fetchall()
 
@@ -685,72 +689,72 @@ def search_similar_games(
 
 
 
-if __name__ == "__main__":
-    query = str.strip("""
-        Экономическая настольная игра, в которой игроки используют рабочих разных цветов для размещения на общих и чужих территориях, участвуют в аукционе за тайлы и развивают свои поселения.
-        """).strip()
+# if __name__ == "__main__":
+#     query = str.strip("""
+#         Экономическая настольная игра, в которой игроки используют рабочих разных цветов для размещения на общих и чужих территориях, участвуют в аукционе за тайлы и развивают свои поселения.
+#         """).strip()
 
-    load_dotenv()
+#     load_dotenv()
 
-    if query:
-        query = translator(query)
-    reference_game_id = None
+#     if query:
+#         query = translator(query)
+#     reference_game_id = None
 
-    union_query = None
-    formatted_refer_info = None
+#     union_query = None
+#     formatted_refer_info = None
 
-    if reference_game_id and query:
-        reference_game_info = load_games_from_db([reference_game_id])[0]
-        formatted_refer_info = build_source_text(reference_game_info)
-        union_query = f"Reference game:\n{formatted_refer_info}.\n\nUser preferences:\n{query}"
-        print(f"Запрос: {union_query}")
-    elif query:
-        print(f"Запрос: {query}")
-    else:
-        print(f"Запрос не задан, поиск будет основан только на игре с id = {reference_game_id}")
-        reference_game_info = load_games_from_db([reference_game_id])[0]
-        formatted_refer_info = build_source_text(reference_game_info)
+#     if reference_game_id and query:
+#         reference_game_info = load_games_from_db([reference_game_id])[0]
+#         formatted_refer_info = build_source_text(reference_game_info)
+#         union_query = f"Reference game:\n{formatted_refer_info}.\n\nUser preferences:\n{query}"
+#         print(f"Запрос: {union_query}")
+#     elif query:
+#         print(f"Запрос: {query}")
+#     else:
+#         print(f"Запрос не задан, поиск будет основан только на игре с id = {reference_game_id}")
+#         reference_game_info = load_games_from_db([reference_game_id])[0]
+#         formatted_refer_info = build_source_text(reference_game_info)
 
 
-    results = search_similar_games(
-        query,
-        # weight_min=2.0,
-        # weight_max=3.5,
-        # mechanics=[29],
-        # categories=[127],
-        reference_game_id=reference_game_id,
-        alpha=0.4,
-        top_k=SAMPLE_SIZE,
-    )   
+#     results = search_similar_games(
+#         query,
+#         # weight_min=2.0,
+#         # weight_max=3.5,
+#         # mechanics=[29],
+#         # categories=[127],
+#         reference_game_id=reference_game_id,
+#         alpha=0.4,
+#         top_k=SAMPLE_SIZE,
+#     )   
 
-    if union_query:
-        reranked = rerank_with_cross_encoder(union_query, results)
-    elif query:
-        reranked = rerank_with_cross_encoder(query, results)
-    else:
-        reranked = rerank_with_cross_encoder(formatted_refer_info, results)
+#     if union_query:
+#         reranked = rerank_with_cross_encoder(union_query, results)
+#     elif query:
+#         reranked = rerank_with_cross_encoder(query, results)
+#     else:
+#         reranked = rerank_with_cross_encoder(formatted_refer_info, results)
 
-    logging.info(f"Получено {len(reranked)} игр после переранжирования, отбираем топ {GAMES_TOP_K}")
+#     logging.info(f"Получено {len(reranked)} игр после переранжирования, отбираем топ {GAMES_TOP_K}")
 
-    final = reranked[:GAMES_TOP_K]
+#     final = reranked[:GAMES_TOP_K]
 
-    print("\n🎲 Похожие игры:\n")
-    # for game_id, name, rating, weight, playtime, text_distance, mechanics_score, strong_mechanics_count, matched_mechanics, max_mechanic_score, category_score, max_category_score, mechanics_penalty, matched_core_names, final_score in results:
-    #     print(name)
-    #     print(
-    #         f"  rating: {rating} | weight: {weight} | playtime: {playtime} | "
-    #         f"text_distance: {text_distance:.4f} | mechanics_score: {mechanics_score:.4f} | "
-    #         f"strong_mechanics_count: {strong_mechanics_count} | "
-    #         # f"matched_mechanics: {matched_mechanics} | "
-    #         f"max_mechanic_score: {max_mechanic_score:.4f} | category_score: {category_score:.4f} | "
-    #         f"max_category_score: {max_category_score:.4f} | mechanics_penalty: {mechanics_penalty:.4f} | final_score: {final_score:.4f}"
-    #     )
-    #     if matched_mechanics:
-    #         print(f"  matched mechanics: {matched_mechanics}")
-    #     if matched_core_names:
-    #         print(f"  matched core mechanics: {matched_core_names}")
-    #     print("-" * 60)
+#     print("\n🎲 Похожие игры:\n")
+#     # for game_id, name, rating, weight, playtime, text_distance, mechanics_score, strong_mechanics_count, matched_mechanics, max_mechanic_score, category_score, max_category_score, mechanics_penalty, matched_core_names, final_score in results:
+#     #     print(name)
+#     #     print(
+#     #         f"  rating: {rating} | weight: {weight} | playtime: {playtime} | "
+#     #         f"text_distance: {text_distance:.4f} | mechanics_score: {mechanics_score:.4f} | "
+#     #         f"strong_mechanics_count: {strong_mechanics_count} | "
+#     #         # f"matched_mechanics: {matched_mechanics} | "
+#     #         f"max_mechanic_score: {max_mechanic_score:.4f} | category_score: {category_score:.4f} | "
+#     #         f"max_category_score: {max_category_score:.4f} | mechanics_penalty: {mechanics_penalty:.4f} | final_score: {final_score:.4f}"
+#     #     )
+#     #     if matched_mechanics:
+#     #         print(f"  matched mechanics: {matched_mechanics}")
+#     #     if matched_core_names:
+#     #         print(f"  matched core mechanics: {matched_core_names}")
+#     #     print("-" * 60)
 
-    for game in final:
-        print(f"game: {game['game']}, final_score = {game['ce_score']}")
-        # print{f"game['primary_score']}\n")
+#     for game in final:
+#         print(f"game: {game['game']}, final_score = {game['ce_score']}")
+#         # print{f"game['primary_score']}\n")
