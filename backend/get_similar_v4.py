@@ -679,21 +679,21 @@ def search_similar_games(
 
     params = [query_embedding] + where_params + [top_k]
 
-    t0 = time.time.perf_counter()
+    t0 = time.perf_counter()
     logging.info("Acquire connection")
 
     with pool.connection() as conn:
-        logging.info(f"Connection acquired {time.time.perf_counter()-t0:.3f}s")
-        t1 = time.time.perf_counter()
+        logging.info(f"Connection acquired {time.perf_counter()-t0:.3f}s")
+        t1 = time.perf_counter()
         with conn.cursor() as cur:
-            logging.info(f"Cursor created {time.time.perf_counter()-t1:.3f}s")
+            logging.info(f"Cursor created {time.perf_counter()-t1:.3f}s")
 
-            t2 = time.time.perf_counter()
+            t2 = time.perf_counter()
             logging.info(f"Старт самого SQL запроса поиска похожих игр")
             cur.execute(sql, params)
 
             results = cur.fetchall()
-            logging.info(f"Execute done {time.time.perf_counter()-t2:.3f}s")
+            logging.info(f"Execute done {time.perf_counter()-t2:.3f}s")
 
     logging.info(f"Поиск похожих игр завершён, найдено {len(results)} игр")
 
