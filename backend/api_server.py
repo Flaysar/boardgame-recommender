@@ -12,6 +12,8 @@ import logging
 
 from db import pool
 
+logging.getLogger("psycopg.pool").setLevel(logging.INFO)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
