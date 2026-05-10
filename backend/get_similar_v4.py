@@ -12,7 +12,7 @@ from sentence_transformers import CrossEncoder
 import requests
 
 # from db import pool
-from db import get_connection
+from db import build_db_url, get_connection
 
 logging.getLogger("psycopg.pool").setLevel(logging.INFO)
 
@@ -88,7 +88,7 @@ def get_embedding(text: str):
     return embedding.tolist()
 
 def get_game_embedding_by_id(game_id: int):
-    database_url = os.getenv("DATABASE_URL")
+    # database_url = os.getenv("DATABASE_URL")
 
     # with pool.connection() as conn:
     with get_connection() as conn:
@@ -242,7 +242,7 @@ def load_games_from_db(game_ids):
         WHERE g.game_id = ANY(%s)
     """
 
-    database_url = os.getenv("DATABASE_URL")
+    database_url = build_db_url()
 
     if not database_url:
         raise RuntimeError("DATABASE_URL не найден")
@@ -374,7 +374,7 @@ def search_similar_games(
     alpha: float = 0.7,
     top_k: int = 5,
 ):
-    database_url = os.getenv("DATABASE_URL")
+    database_url = build_db_url()
 
     if not database_url:
         raise RuntimeError("DATABASE_URL не найден")
