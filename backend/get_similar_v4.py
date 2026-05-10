@@ -11,7 +11,8 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers import CrossEncoder
 import requests
 
-from db import pool
+# from db import pool
+from db import get_connection
 
 logging.getLogger("psycopg.pool").setLevel(logging.INFO)
 
@@ -89,7 +90,8 @@ def get_embedding(text: str):
 def get_game_embedding_by_id(game_id: int):
     database_url = os.getenv("DATABASE_URL")
 
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn:
         register_vector(conn)
         with conn.cursor() as cur:
             cur.execute(
@@ -245,7 +247,8 @@ def load_games_from_db(game_ids):
     if not database_url:
         raise RuntimeError("DATABASE_URL не найден")
 
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (game_ids,))
             results = cur.fetchall()
@@ -682,7 +685,8 @@ def search_similar_games(
     t0 = time.perf_counter()
     logging.info("Acquire connection")
 
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn: 
         logging.info(f"Connection acquired {time.perf_counter()-t0:.3f}s")
         t1 = time.perf_counter()
         with conn.cursor() as cur:

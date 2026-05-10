@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 import time
 import logging
 
-from db import pool
+# from db import pool
+from dm import get_connection
 
 logging.getLogger("psycopg.pool").setLevel(logging.INFO)
 
@@ -94,7 +95,8 @@ def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
         WHERE game_id = ANY(%s)
     """
     out: dict[int, Optional[str]] = {}
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (game_ids,))
             for game_id, image_url in cur.fetchall():
@@ -182,7 +184,8 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
         LIMIT %s
     """
     items = []
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (f"%{q.strip()}%", limit))
             for game_id, name, image_url in cur.fetchall():
@@ -200,7 +203,8 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
 def meta():
     mechanics = []
     categories = []
-    with pool.connection() as conn:
+    # with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             mech_has_desc = _table_has_column(cur, "mechanics", "description")
             cat_has_desc = _table_has_column(cur, "categories", "description")
