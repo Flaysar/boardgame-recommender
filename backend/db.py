@@ -33,10 +33,17 @@
 
 import os
 import psycopg
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_connection():
+    dsn = os.getenv("DATABASE_URL")
+
+    logger.info(f"[DB] Connecting with DSN: {dsn}")
+
     return psycopg.connect(
-        os.getenv("DATABASE_URL"),
+        dsn,
         autocommit=True,
         connect_timeout=5,
     )
