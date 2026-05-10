@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+
+    environment:
+      POSTGRES_DB: boardgames
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  backend:
+    env_file:
+      - ./backend/.env
+
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+
+    build: ./backend
+
+    container_name: backend
+
+    ports:
+      - "10000:10000"
+
+    depends_on:
+      - postgres
+
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+
+    container_name: frontend
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - PYTHON_API_URL=http://backend:10000
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
+  hf_cache:
+
