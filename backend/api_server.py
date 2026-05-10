@@ -11,7 +11,7 @@ import time
 import logging
 
 # from db import pool
-from dm import get_connection
+from db import get_connection
 
 logging.getLogger("psycopg.pool").setLevel(logging.INFO)
 
