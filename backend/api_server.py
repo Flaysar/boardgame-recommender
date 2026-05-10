@@ -36,7 +36,7 @@ from get_similar_v4 import (
 )
 
 
-load_dotenv()
+# load_dotenv()
 
 app = FastAPI(title="BoardGame Recommender API", version="1.0.0")
 

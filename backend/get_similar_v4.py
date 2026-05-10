@@ -20,7 +20,7 @@ logging.getLogger("psycopg.pool").setLevel(logging.INFO)
 # TRANSLATION
 # -----------------------------
 def translator(ru_text: str) -> str:
-    load_dotenv()
+    # load_dotenv()
 
     API_KEY = os.getenv("TRANSLATOR_API_KEY")
     folder_id = os.getenv("YANDEX_CATALOG_ID")
