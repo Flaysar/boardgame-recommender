@@ -63,11 +63,11 @@ function DualRangeField(props: {
     }
 
     if (hasMin && !hasMax) {
-      return `От ${props.valueMin.toFixed(precision)}`;
+      return `От ${props.valueMin!.toFixed(precision)}`;
     }
 
     if (!hasMin && hasMax) {
-      return `До ${props.valueMax.toFixed(precision)}`;
+      return `До ${props.valueMax!.toFixed(precision)}`;
     }
 
     return `${props.valueMin?.toFixed(precision)} - ${props.valueMax?.toFixed(
