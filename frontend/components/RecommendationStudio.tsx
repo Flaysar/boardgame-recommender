@@ -24,36 +24,71 @@ function DualRangeField(props: {
   min: number;
   max: number;
   step?: number;
-  valueMin: number;
-  valueMax: number;
-  onMinChange: (v: number) => void;
-  onMaxChange: (v: number) => void;
+  valueMin: number | null;
+  valueMax: number | null;
+  onMinChange: (v: number | null) => void;
+  onMaxChange: (v: number | null) => void;
   suffix?: string;
   precision?: number;
 }) {
   const [activeThumb, setActiveThumb] = useState<"min" | "max" | null>(null);
+
   const step = props.step ?? 1;
   const precision = props.precision ?? 0;
-  const minText = props.valueMin.toFixed(precision);
-  const maxText = props.valueMax.toFixed(precision);
-  const range = props.max - props.min || 1;
-  const leftPct = ((props.valueMin - props.min) / range) * 100;
-  const rightPct = ((props.valueMax - props.min) / range) * 100;
 
-  function parseBound(raw: string, fallback: number): number {
+  const actualMin = props.valueMin ?? props.min;
+  const actualMax = props.valueMax ?? props.max;
+
+  const range = props.max - props.min || 1;
+
+  const leftPct = ((actualMin - props.min) / range) * 100;
+  const rightPct = ((actualMax - props.min) / range) * 100;
+
+  function parseBound(raw: string, fallback: number | null): number | null {
+    if (raw.trim() === "") return null;
+
     const n = Number(raw.replace(",", "."));
+
     if (Number.isNaN(n)) return fallback;
+
     return Math.max(props.min, Math.min(n, props.max));
   }
 
+  function formatLabel() {
+    const hasMin = props.valueMin != null;
+    const hasMax = props.valueMax != null;
+
+    if (!hasMin && !hasMax) {
+      return "Без ограничений";
+    }
+
+    if (hasMin && !hasMax) {
+      return `От ${props.valueMin.toFixed(precision)}`;
+    }
+
+    if (!hasMin && hasMax) {
+      return `До ${props.valueMax.toFixed(precision)}`;
+    }
+
+    return `${props.valueMin?.toFixed(precision)} - ${props.valueMax?.toFixed(
+      precision,
+    )}`;
+  }
+
+  const label = formatLabel();
   return (
     <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
       <div className="flex items-center justify-between text-sm">
         <p className="font-medium text-zinc-800">{props.title}</p>
+
         <p className="text-zinc-600">
-          {minText} - {maxText} {props.suffix ?? ""}
+          {label}
+          {label !== "Без ограничений" && props.suffix
+            ? ` ${props.suffix}`
+            : ""}
         </p>
       </div>
+
       <div className="mt-2 grid grid-cols-2 gap-2">
         <label className="text-xs text-zinc-600">
           Мин
@@ -62,14 +97,26 @@ function DualRangeField(props: {
             min={props.min}
             max={props.max}
             step={step}
-            value={minText}
+            value={
+              props.valueMin != null
+                ? props.valueMin.toFixed(precision)
+                : ""
+            }
+            placeholder="нет"
             onChange={(e) => {
               const n = parseBound(e.target.value, props.valueMin);
-              props.onMinChange(Math.min(n, props.valueMax));
+
+              if (n == null) {
+                props.onMinChange(null);
+                return;
+              }
+
+              props.onMinChange(Math.min(n, actualMax));
             }}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
           />
         </label>
+
         <label className="text-xs text-zinc-600">
           Макс
           <input
@@ -77,52 +124,69 @@ function DualRangeField(props: {
             min={props.min}
             max={props.max}
             step={step}
-            value={maxText}
+            value={
+              props.valueMax != null
+                ? props.valueMax.toFixed(precision)
+                : ""
+            }
+            placeholder="нет"
             onChange={(e) => {
               const n = parseBound(e.target.value, props.valueMax);
-              props.onMaxChange(Math.max(n, props.valueMin));
+
+              if (n == null) {
+                props.onMaxChange(null);
+                return;
+              }
+
+              props.onMaxChange(Math.max(n, actualMin));
             }}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
           />
         </label>
       </div>
+
       <div className="relative mt-4">
         <div className="h-2 rounded-full bg-zinc-200" />
-        <div
-          className="pointer-events-none absolute top-0 h-2 rounded-full bg-orange-400"
-          style={{
-            left: `${leftPct}%`,
-            width: `${Math.max(rightPct - leftPct, 0)}%`,
-          }}
-        />
+
+        {(props.valueMin != null || props.valueMax != null) && (
+          <div
+            className="pointer-events-none absolute top-0 h-2 rounded-full bg-orange-400"
+            style={{
+              left: `${leftPct}%`,
+              width: `${Math.max(rightPct - leftPct, 0)}%`,
+            }}
+          />
+        )}
+
         <input
           type="range"
           min={props.min}
           max={props.max}
           step={step}
-          value={props.valueMin}
+          value={actualMin}
           onMouseDown={() => setActiveThumb("min")}
           onTouchStart={() => setActiveThumb("min")}
           onChange={(e) =>
             props.onMinChange(
-              Math.min(Number(e.target.value), props.valueMax),
+              Math.min(Number(e.target.value), actualMax),
             )
           }
           className={`dual-range-input absolute top-[-6px] h-5 w-full appearance-none bg-transparent accent-orange-500 ${
             activeThumb === "min" ? "z-30" : "z-20"
           }`}
         />
+
         <input
           type="range"
           min={props.min}
           max={props.max}
           step={step}
-          value={props.valueMax}
+          value={actualMax}
           onMouseDown={() => setActiveThumb("max")}
           onTouchStart={() => setActiveThumb("max")}
           onChange={(e) =>
             props.onMaxChange(
-              Math.max(Number(e.target.value), props.valueMin),
+              Math.max(Number(e.target.value), actualMin),
             )
           }
           className={`dual-range-input absolute top-[-6px] h-5 w-full appearance-none bg-transparent accent-orange-500 ${
@@ -136,15 +200,14 @@ function DualRangeField(props: {
 
 export function RecommendationStudio() {
   const [query, setQuery] = useState("");
-  const [playersMin, setPlayersMin] = useState(1);
-  const [playersMax, setPlayersMax] = useState(12);
-  const [playtimeMin, setPlaytimeMin] = useState(0);
-  const [playtimeMax, setPlaytimeMax] = useState(720);
-  const [weightMin, setWeightMin] = useState(0);
-  const [weightMax, setWeightMax] = useState(5);
-  const [playersTouched, setPlayersTouched] = useState(false);
-  const [playtimeTouched, setPlaytimeTouched] = useState(false);
-  const [weightTouched, setWeightTouched] = useState(false);
+  const [playersMin, setPlayersMin] = useState<number | null>(null);
+  const [playersMax, setPlayersMax] = useState<number | null>(null);
+
+  const [playtimeMin, setPlaytimeMin] = useState<number | null>(null);
+  const [playtimeMax, setPlaytimeMax] = useState<number | null>(null);
+
+  const [weightMin, setWeightMin] = useState<number | null>(null);
+  const [weightMax, setWeightMax] = useState<number | null>(null);
   const [mechanicsIds, setMechanicsIds] = useState<number[]>([]);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [referenceGameId, setReferenceGameId] = useState<number | null>(null);
@@ -234,12 +297,14 @@ export function RecommendationStudio() {
 
     const body = buildRecommendBody({
       query,
-      playersMin: playersTouched ? String(playersMin) : "",
-      playersMax: playersTouched ? String(playersMax) : "",
-      playtimeMin: playtimeTouched ? String(playtimeMin) : "",
-      playtimeMax: playtimeTouched ? String(playtimeMax) : "",
-      weightMin: weightTouched ? String(weightMin) : "",
-      weightMax: weightTouched ? String(weightMax) : "",
+      playersMin: playersMin != null ? String(playersMin) : "",
+      playersMax: playersMax != null ? String(playersMax) : "",
+
+      playtimeMin: playtimeMin != null ? String(playtimeMin) : "",
+      playtimeMax: playtimeMax != null ? String(playtimeMax) : "",
+
+      weightMin: weightMin != null ? String(weightMin) : "",
+      weightMax: weightMax != null ? String(weightMax) : "",
       mechanicsIds,
       categoryIds,
       referenceGameId,
@@ -276,16 +341,13 @@ export function RecommendationStudio() {
     alpha,
     categoryIds,
     mechanicsIds,
-    playersTouched,
     playersMax,
     playersMin,
-    playtimeTouched,
     playtimeMax,
     playtimeMin,
     query,
     referenceGameId,
     topK,
-    weightTouched,
     weightMax,
     weightMin,
   ]);
@@ -308,15 +370,14 @@ export function RecommendationStudio() {
   }
 
   function resetAllFilters() {
-    setPlayersMin(1);
-    setPlayersMax(12);
-    setPlaytimeMin(0);
-    setPlaytimeMax(720);
-    setWeightMin(0);
-    setWeightMax(5);
-    setPlayersTouched(false);
-    setPlaytimeTouched(false);
-    setWeightTouched(false);
+    setPlayersMin(null);
+    setPlayersMax(null);
+
+    setPlaytimeMin(null);
+    setPlaytimeMax(null);
+
+    setWeightMin(null);
+    setWeightMax(null);
     setMechanicsIds([]);
     setCategoryIds([]);
     setMechanicSearch("");
@@ -472,14 +533,8 @@ export function RecommendationStudio() {
                 max={12}
                 valueMin={playersMin}
                 valueMax={playersMax}
-                onMinChange={(v) => {
-                  setPlayersTouched(true);
-                  setPlayersMin(v);
-                }}
-                onMaxChange={(v) => {
-                  setPlayersTouched(true);
-                  setPlayersMax(v);
-                }}
+                onMinChange={setPlayersMin}
+                onMaxChange={setPlayersMax}
               />
               <DualRangeField
                 title="Время партии"
@@ -487,14 +542,8 @@ export function RecommendationStudio() {
                 max={720}
                 valueMin={playtimeMin}
                 valueMax={playtimeMax}
-                onMinChange={(v) => {
-                  setPlaytimeTouched(true);
-                  setPlaytimeMin(v);
-                }}
-                onMaxChange={(v) => {
-                  setPlaytimeTouched(true);
-                  setPlaytimeMax(v);
-                }}
+                onMinChange={setPlaytimeMin}
+                onMaxChange={setPlaytimeMax}
                 suffix="мин"
               />
               <DualRangeField
@@ -504,14 +553,8 @@ export function RecommendationStudio() {
                 step={0.1}
                 valueMin={weightMin}
                 valueMax={weightMax}
-                onMinChange={(v) => {
-                  setWeightTouched(true);
-                  setWeightMin(v);
-                }}
-                onMaxChange={(v) => {
-                  setWeightTouched(true);
-                  setWeightMax(v);
-                }}
+                onMinChange={setWeightMin}
+                onMaxChange={setWeightMax}
                 precision={1}
               />
 
