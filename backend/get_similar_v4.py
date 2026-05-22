@@ -599,7 +599,7 @@ def search_similar_games(
                     1
             ) AS mechanics_penalty,
 
-            -- matched_core_names,
+            null as matched_core_names,
 
             -- FINAL SCORE:
             (
