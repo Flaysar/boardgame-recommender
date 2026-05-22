@@ -406,7 +406,6 @@ def search_similar_games(
 
     logging.info(f"embedding готов")
 
-    # players — hard filter
     if players_min is not None and players_max is not None:
         where_clauses.append("g.min_players <= %s AND g.max_players >= %s")
         where_params.extend([players_min, players_max])
@@ -417,7 +416,6 @@ def search_similar_games(
         where_clauses.append("g.min_players <= %s")
         where_params.append(players_max)
 
-    # playtime — soft filter
     all_playtime = playtime_min is not None and playtime_max is not None
     if all_playtime:
         where_clauses.append("g.playtime BETWEEN GREATEST(0, %s - 60) AND %s + 60")
@@ -429,7 +427,6 @@ def search_similar_games(
         where_clauses.append("g.playtime <= %s + 60")
         where_params.append(playtime_max)
 
-    # weight — soft filter
     if weight_min is not None and weight_max is not None:
         where_clauses.append("g.weight BETWEEN GREATEST(0, %s - 0.7) AND %s + 0.7")
         where_params.extend([weight_min, weight_max])
@@ -483,14 +480,14 @@ def search_similar_games(
         SELECT
             m.mechanic_id,
             m.name,
-            (m.embedding <-> q.qvec) AS mech_distance,
+            (m.embedding <=> q.qvec) AS mech_distance,
 
             LOG(tg.total / NULLIF(ms.games_count, 0)) AS mechanic_idf,
 
             (
                 LOG(tg.total / NULLIF(ms.games_count, 0))
                 *
-                EXP(-1.5 * (m.embedding <-> q.qvec))
+                EXP(-1.5 * (m.embedding <=> q.qvec))
             ) AS weighted_bonus
 
         FROM mechanics m
@@ -499,24 +496,6 @@ def search_similar_games(
         JOIN mechanic_stats ms
             ON ms.mechanic_id = m.mechanic_id
         WHERE m.embedding IS NOT NULL
-    ),
-    top_query_mechanics AS (
-        SELECT mechanic_id
-        FROM mechanics_scored
-        ORDER BY weighted_bonus DESC
-        LIMIT 5
-    ),
-    core_mechanic_match AS (
-        SELECT
-            gm.game_id,
-            COUNT(*) AS matched_core,
-            string_agg(m.name, ', ') AS matched_core_names
-        FROM games_mechanics gm
-        JOIN top_query_mechanics tqm
-            ON tqm.mechanic_id = gm.mechanic_id
-        LEFT JOIN mechanics m
-            ON m.mechanic_id = gm.mechanic_id
-        GROUP BY gm.game_id
     ),
     game_mechanics_match AS (
         SELECT
@@ -533,13 +512,6 @@ def search_similar_games(
     game_mechanics_score AS (
         SELECT
             game_id,
-
-            --SUM(
-            --    CASE
-            --        WHEN weighted_bonus > {MECHANICS_LIMIT} THEN weighted_bonus
-            --        ELSE 0
-            --    END
-            --) AS mechanics_score,
 
             LOG(
                 1 + SUM(
@@ -569,9 +541,8 @@ def search_similar_games(
         SELECT
             c.category_id,
             c.name,
-            (c.embedding <-> q.qvec) AS cat_distance,
-            -- мягкий скор (без IDF)
-            EXP(-1.5 * (c.embedding <-> q.qvec)) AS category_weight
+            (c.embedding <=> q.qvec) AS cat_distance,
+            EXP(-1.5 * (c.embedding <=> q.qvec)) AS category_weight
         FROM categories c
         CROSS JOIN query q
         WHERE c.embedding IS NOT NULL
@@ -588,7 +559,6 @@ def search_similar_games(
     game_category_score AS (
         SELECT
             game_id,
-            -- saturation (как у механик)
             LOG(1 + SUM(category_weight)) AS category_score,
             MAX(category_weight) AS max_category_score,
             COUNT(*) FILTER (
@@ -605,15 +575,14 @@ def search_similar_games(
             g.playtime,
 
             -- обычный embedding distance
-            (ge.embedding <-> q.qvec) AS text_distance,
+            (ge.embedding <=> q.qvec) AS text_distance,
 
-            -- mechanics bonus
+            -- бонус механик
             COALESCE(gms.mechanics_score, 0) AS mechanics_score,
 
             COALESCE(gms.strong_mechanics_count, 0) AS strong_mechanics_count,
 
             COALESCE(gms.matched_mechanics, '') AS matched_mechanics,
-            --'' as matched_mechanics,
 
             max_mechanic_score,
 
@@ -633,32 +602,18 @@ def search_similar_games(
             matched_core_names,
 
             -- FINAL SCORE:
-            -- embedding distance
-            -- минус бонус за хорошие совпадения механик
             (
-                {TEXT_WEIGHT} * (ge.embedding <-> q.qvec)
+                {TEXT_WEIGHT} * (ge.embedding <=> q.qvec)
                 -
                 {MECHANICS_WEIGHT} * COALESCE(gms.mechanics_score + 1.5 * max_mechanic_score, 0)
                 -
                 {CATEGORY_WEIGHT} * COALESCE(gcs.category_score + 2 * gcs.max_category_score, 0)
-                -- + 
-                -- {CORE_MECHANICS_WEIGHT} * EXP(-1.0 * COALESCE(cm.matched_core, 0))
-            --) 
-            --* 
-            --COALESCE(
-            --        EXP(
-            --            -2.0 * (
-            --                COALESCE(gms.max_mechanic_score, 0)
-            --                + LOG(1 + COALESCE(gms.strong_mechanics_count, 0))
-            --            )
-            --        ),
-            --        1
+
             ) AS final_score
 
         FROM game_embeddings ge
         JOIN games g
             ON g.game_id = ge.game_id
-            --and g.name = 'Keyflower'
 
         CROSS JOIN query q
 
@@ -667,9 +622,6 @@ def search_similar_games(
 
         LEFT JOIN game_category_score gcs
             ON gcs.game_id = g.game_id
-
-        LEFT JOIN core_mechanic_match cm 
-            ON cm.game_id = g.game_id
 
         WHERE {" AND ".join(where_clauses)}
 
@@ -700,6 +652,9 @@ def search_similar_games(
             logging.info(f"Execute done {time.perf_counter()-t2:.3f}s")
 
     logging.info(f"Поиск похожих игр завершён, найдено {len(results)} игр")
+
+    for x in results:
+        logging.info(f"{x[1]}")
 
     return results
 
