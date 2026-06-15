@@ -1,7 +1,3 @@
-/**
- * Тело запроса к вашему Python API (snake_case), в духе get_similar_v4.search_similar_games.
- * Бэкенд после векторного поиска и кросс-энкодера может вернуть усечённый top_k и поля ниже.
- */
 export interface RecommendRequestBody {
   query?: string;
   players_min?: number | null;
@@ -13,9 +9,7 @@ export interface RecommendRequestBody {
   mechanics?: number[];
   categories?: number[];
   reference_game_id?: number | null;
-  /** Доля вклада эмбеддинга референс-игры (как alpha в mix_embeddings). */
   alpha?: number;
-  /** Сколько игр вернуть после rerank (обычно 10–20 для UI). */
   top_k?: number;
 }
 

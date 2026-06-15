@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field
 import time
 import logging
 
-# from db import pool
 from db import get_connection
 
 logging.getLogger("psycopg.pool").setLevel(logging.INFO)
@@ -35,9 +34,6 @@ from get_similar_v4 import (
     translator,
 )
 
-
-# load_dotenv()
-
 app = FastAPI(title="BoardGame Recommender API", version="1.0.0")
 
 app.add_middleware(
@@ -47,19 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-
-# logging.info("До connect")
-
-# t = time.time()
-
-# conn = psycopg.connect(
-#     os.getenv("DATABASE_URL"),
-#     connect_timeout=5
-# )
-
-# logging.info(f"CONNECT OK: {time.time() - t:.2f}s")
 
 
 class RecommendRequest(BaseModel):
@@ -95,7 +78,6 @@ def _get_images_by_game_ids(game_ids: list[int]) -> dict[int, Optional[str]]:
         WHERE game_id = ANY(%s)
     """
     out: dict[int, Optional[str]] = {}
-    # with pool.connection() as conn:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (game_ids,))
@@ -184,7 +166,6 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
         LIMIT %s
     """
     items = []
-    # with pool.connection() as conn:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (f"%{q.strip()}%", limit))
@@ -203,7 +184,6 @@ def search_games_by_name(q: str = Query(min_length=1), limit: int = Query(defaul
 def meta():
     mechanics = []
     categories = []
-    # with pool.connection() as conn:
     with get_connection() as conn:
         with conn.cursor() as cur:
             mech_has_desc = _table_has_column(cur, "mechanics", "description")
@@ -284,7 +264,6 @@ def recommend(payload: RecommendRequest):
         elif search_query:
             reranked = rerank_with_cross_encoder(search_query, results)
         else:
-            # only reference game mode
             ref_game = load_games_from_db([payload.reference_game_id])[0]
             fallback_q = ref_game["name"] or "reference game"
             reranked = rerank_with_cross_encoder(fallback_q, results)
