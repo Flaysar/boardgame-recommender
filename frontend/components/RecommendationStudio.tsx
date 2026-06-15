@@ -102,7 +102,6 @@ function DualRangeField(props: {
                 ? props.valueMin.toFixed(precision)
                 : ""
             }
-            placeholder="нет"
             onChange={(e) => {
               const n = parseBound(e.target.value, props.valueMin);
 
@@ -129,7 +128,6 @@ function DualRangeField(props: {
                 ? props.valueMax.toFixed(precision)
                 : ""
             }
-            placeholder="нет"
             onChange={(e) => {
               const n = parseBound(e.target.value, props.valueMax);
 
@@ -412,7 +410,6 @@ export function RecommendationStudio() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               rows={5}
-              placeholder='Например: «кооператив на одного против игры с картами событий, не слишком долго»…'
               className="mt-2 w-full resize-none rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
             />
             <h2 className="mt-4 text-sm font-medium text-zinc-800">
@@ -427,7 +424,6 @@ export function RecommendationStudio() {
                 type="search"
                 value={gameSearchInput}
                 onChange={(e) => setGameSearchInput(e.target.value)}
-                placeholder="Найти игру по названию…"
                 className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                 autoComplete="off"
               />
@@ -446,7 +442,6 @@ export function RecommendationStudio() {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-zinc-50"
                       >
                         {h.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={h.imageUrl}
                             alt=""
@@ -471,7 +466,6 @@ export function RecommendationStudio() {
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       {referenceHit.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={referenceHit.imageUrl} alt="" className="size-10 rounded-lg object-cover" />
                       ) : (
                         <span className="flex size-10 items-center justify-center rounded-lg bg-zinc-200">🎲</span>
@@ -564,7 +558,6 @@ export function RecommendationStudio() {
                   type="search"
                   value={mechanicSearch}
                   onChange={(e) => setMechanicSearch(e.target.value)}
-                  placeholder="Поиск механики..."
                   className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                 />
                 <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-2">
@@ -605,7 +598,6 @@ export function RecommendationStudio() {
                   type="search"
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
-                  placeholder="Поиск категории..."
                   className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                 />
                 <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-2">

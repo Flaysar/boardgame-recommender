@@ -1,4 +1,3 @@
-/** Ответ бэкенда для одной рекомендованной игры (snake_case, как в Python). */
 export interface RecommendedGameRaw {
   game_id: number;
   name: string;
@@ -14,7 +13,6 @@ export interface RecommendedGameRaw {
   categories?: string[] | null;
 }
 
-/** Нормализованная модель для UI. */
 export interface RecommendedGame {
   gameId: number;
   name: string;

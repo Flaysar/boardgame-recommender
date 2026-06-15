@@ -13,7 +13,6 @@ export function GameCard({ game, rank }: Props) {
       <div className="grid gap-4 p-4 md:grid-cols-[240px_1fr] md:p-5">
         <div className="relative h-[180px] overflow-hidden rounded-xl bg-zinc-100 md:h-[220px]">
           {game.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={game.imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center text-5xl text-zinc-400">
